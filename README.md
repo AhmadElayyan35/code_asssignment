@@ -1,1 +1,80 @@
-# code_asssignment
+// Pin definitions
+const int trigPin = 7;      // Ultrasonic sensor trigger pin
+const int echoPin = 8;      // Ultrasonic sensor echo pin
+const int greenLedPin = 9;  // Green LED pin
+const int yellowLedPin = 10; // Yellow LED pin
+const int redLedPin = 11;   // Red LED pin
+const int joyXPin = A4;     // Joystick X-axis (for adjusting threshold)
+
+// Threshold distances (initial values)
+int distanceThresholdGreen = 20;
+int distanceThresholdYellow = 10;
+
+void setup() {
+  // Set LED pins as outputs
+  pinMode(greenLedPin, OUTPUT);
+  pinMode(yellowLedPin, OUTPUT);
+  pinMode(redLedPin, OUTPUT);
+  
+  // Set ultrasonic sensor pins
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  
+  // Initialize serial communication for debugging
+  Serial.begin(9600);
+}
+
+void loop() {
+  // Read joystick X position
+  int joyXVal = analogRead(joyXPin);
+
+  // Map joystick value to threshold ranges
+  // Map joystick (0 to 1023) to Green threshold (15 to 50 cm)
+  distanceThresholdGreen = map(joyXVal, 0, 1023, 15, 50);
+  
+  // Ensure Yellow threshold stays a certain range below Green threshold
+  // Yellow threshold is mapped to a range between 5 and distanceThresholdGreen - 5
+  distanceThresholdYellow = map(joyXVal, 0, 1023, 5, distanceThresholdGreen - 5);
+
+  // Measure distance using the ultrasonic sensor
+  int distance = getDistance();
+
+  // Debugging output to Serial Monitor
+  Serial.print("Distance: ");
+  Serial.print(distance);
+  Serial.print(" cm, Green Threshold: ");
+  Serial.print(distanceThresholdGreen);
+  Serial.print(" cm, Yellow Threshold: ");
+  Serial.println(distanceThresholdYellow);
+
+  // LED control logic based on distance thresholds
+  if (distance > distanceThresholdGreen) {
+    digitalWrite(greenLedPin, HIGH);
+    digitalWrite(yellowLedPin, LOW);
+    digitalWrite(redLedPin, LOW);
+  } else if (distance > distanceThresholdYellow) {
+    digitalWrite(greenLedPin, LOW);
+    digitalWrite(yellowLedPin, HIGH);
+    digitalWrite(redLedPin, LOW);
+  } else {
+    digitalWrite(greenLedPin, LOW);
+    digitalWrite(yellowLedPin, LOW);
+    digitalWrite(redLedPin, HIGH);
+  }
+
+  // Short delay before next loop iteration
+  delay(100);
+}
+
+// Function to get distance from ultrasonic sensor
+int getDistance() {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  
+  long duration = pulseIn(echoPin, HIGH);
+  int distance = duration * 0.034 / 2; // Convert to cm
+  return distance;
+}
